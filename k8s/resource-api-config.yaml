@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resource-api-config
+  namespace: crossplane-demo
+data:
+  BUCKET_NAME: "crossplane-demo-bucket"
+  AWS_REGION: "us-east-1"
+  S3_ENDPOINT: "http://localstack:4566"

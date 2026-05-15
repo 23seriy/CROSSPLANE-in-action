@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xobjectstorages.demo.crossplane.io
+spec:
+  group: demo.crossplane.io
+  names:
+    kind: XObjectStorage
+    plural: xobjectstorages
+  claimNames:
+    kind: ObjectStorage
+    plural: objectstorages
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    region:
+                      type: string
+                      default: us-east-1
+                    versioning:
+                      type: boolean
+                      default: false
+                  required:
+                    - region
+              required:
+                - parameters

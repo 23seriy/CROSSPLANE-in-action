@@ -1,0 +1,14 @@
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: crossplane-demo-bucket
+  labels:
+    demo: crossplane-in-action
+spec:
+  forProvider:
+    region: us-east-1
+    tags:
+      Project: crossplane-in-action
+      ManagedBy: crossplane
+  providerConfigRef:
+    name: localstack

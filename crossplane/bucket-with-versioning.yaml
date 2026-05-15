@@ -1,0 +1,29 @@
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: crossplane-versioned-bucket
+  labels:
+    demo: crossplane-in-action
+spec:
+  forProvider:
+    region: us-east-1
+    tags:
+      Project: crossplane-in-action
+      ManagedBy: crossplane
+      Feature: versioning
+  providerConfigRef:
+    name: localstack
+---
+apiVersion: s3.aws.upbound.io/v1beta1
+kind: BucketVersioning
+metadata:
+  name: crossplane-versioned-bucket-versioning
+spec:
+  forProvider:
+    region: us-east-1
+    bucketRef:
+      name: crossplane-versioned-bucket
+    versioningConfiguration:
+      - status: Enabled
+  providerConfigRef:
+    name: localstack

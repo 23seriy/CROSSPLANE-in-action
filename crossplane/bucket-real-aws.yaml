@@ -1,0 +1,16 @@
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: crossplane-demo-real-bucket
+  labels:
+    demo: crossplane-in-action
+    environment: real
+spec:
+  forProvider:
+    region: us-east-1
+    tags:
+      Project: crossplane-in-action
+      ManagedBy: crossplane
+      Environment: demo
+  providerConfigRef:
+    name: aws-real
