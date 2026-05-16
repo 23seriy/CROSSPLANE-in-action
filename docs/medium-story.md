@@ -31,13 +31,28 @@
 - Watch Crossplane detect the drift and recreate it
 - This is the killer feature: infrastructure reconciliation loops, just like Kubernetes does for Pods
 
-### Section 5: Platform Engineering with XRDs and Compositions
+### Section 5: When Things Go Wrong — Real-World Troubleshooting
+- **Bad Credentials**: ProviderConfig references a missing Secret → SYNCED=False, "cannot get credentials"
+  - Diagnosis: `kubectl describe` the managed resource, read Status.Conditions
+  - Fix: patch `providerConfigRef` or create the missing Secret
+- **Wrong Endpoint**: Provider can't reach the cloud API → "no such host" / "connection refused"
+  - Diagnosis: provider pod logs, describe the managed resource
+  - Fix: correct the ProviderConfig endpoint URL
+- **Missing ProviderConfig**: Typo in `providerConfigRef.name` → "cannot get referenced ProviderConfig"
+  - Diagnosis: compare `kubectl get providerconfig` with the resource spec
+  - Fix: patch the reference or create the missing ProviderConfig
+- **Stuck Finalizer**: Can't delete a resource because the provider can't reach the backend
+  - Diagnosis: object stuck in Terminating, `kubectl get -o yaml | grep finalizers`
+  - Fix: `kubectl patch --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]'`
+- Why this matters: These are the exact issues you'll hit on day 1 with Crossplane in production. Most tutorials skip them.
+
+### Section 6: Platform Engineering with XRDs and Compositions
 - Define a `CompositeResourceDefinition` (XRD) — your platform's API
 - Create a `Composition` — the implementation behind the API
 - Teams create `ObjectStorage` claims without knowing about S3 internals
 - Why this matters: platform teams abstract complexity, dev teams self-serve
 
-### Section 6: Going Real — Switch to AWS
+### Section 7: Going Real — Switch to AWS
 - Swap `providerConfigRef` from `localstack` to `aws-real`
 - Same CRDs, real infrastructure
 - Warning: costs apply
@@ -48,6 +63,7 @@
 3. XRDs + Compositions create platform APIs — dev teams self-serve without cloud console access
 4. LocalStack makes experimentation free — no AWS bill during development
 5. Kubernetes skills transfer — if you know kubectl, you know Crossplane
+6. Troubleshooting skills matter — bad creds, wrong endpoints, stuck finalizers are the real production issues. Most tutorials skip them.
 
 ### Call to Action
 - Link to GitHub repo

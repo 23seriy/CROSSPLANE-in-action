@@ -1,0 +1,59 @@
+## ──────────────────────────────────────────────────────────
+## INTENTIONALLY BROKEN — Wrong Endpoint
+##
+## This ProviderConfig points to a non-existent service
+## (localstack-typo:4566). The provider will fail to
+## connect and the bucket will stay SYNCED=False / READY=False.
+##
+## Diagnosis:
+##   kubectl describe bucket.s3.aws.upbound.io broken-endpoint-bucket
+##   kubectl logs -n crossplane-system -l pkg.crossplane.io/revision --tail=30
+##   → look for connection refused / no such host
+##
+## Fix:
+##   kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
+##     --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+## ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wrong-endpoint-creds
+  namespace: crossplane-system
+type: Opaque
+stringData:
+  credentials: |
+    [default]
+    aws_access_key_id = test
+    aws_secret_access_key = test
+---
+apiVersion: aws.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: wrong-endpoint
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: wrong-endpoint-creds
+      key: credentials
+  endpoint:
+    url:
+      type: Static
+      static: http://localstack-typo.crossplane-demo.svc.cluster.local:9999
+    hostnameImmutable: true
+  skip_metadata_api_check: true
+  skip_credentials_validation: true
+  skip_requesting_account_id: true
+---
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: broken-endpoint-bucket
+  labels:
+    demo: troubleshoot
+spec:
+  forProvider:
+    region: us-east-1
+  providerConfigRef:
+    name: wrong-endpoint

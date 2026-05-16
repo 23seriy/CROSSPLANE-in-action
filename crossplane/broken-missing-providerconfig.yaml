@@ -1,0 +1,35 @@
+## ──────────────────────────────────────────────────────────
+## INTENTIONALLY BROKEN — Missing ProviderConfig Reference
+##
+## This bucket references a ProviderConfig named "production"
+## that was never created. Crossplane will accept the object
+## but it will stay at SYNCED=False / READY=False with:
+##   "cannot get referenced ProviderConfig"
+##
+## This is the #1 most common Crossplane mistake: a typo
+## in providerConfigRef.name or forgetting to create the
+## ProviderConfig in a new cluster.
+##
+## Diagnosis:
+##   kubectl describe bucket.s3.aws.upbound.io orphan-bucket
+##   kubectl get providerconfig
+##   → compare the names
+##
+## Fix:
+##   kubectl patch bucket.s3.aws.upbound.io orphan-bucket \
+##     --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+## ──────────────────────────────────────────────────────────
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: orphan-bucket
+  labels:
+    demo: troubleshoot
+spec:
+  forProvider:
+    region: us-east-1
+    tags:
+      Project: crossplane-in-action
+      Status: this-will-never-provision
+  providerConfigRef:
+    name: production

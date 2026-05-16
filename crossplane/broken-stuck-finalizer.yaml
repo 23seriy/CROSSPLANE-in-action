@@ -1,0 +1,33 @@
+## ──────────────────────────────────────────────────────────
+## TROUBLESHOOTING — Stuck Finalizer on Delete
+##
+## When you delete a Crossplane-managed resource, the provider
+## must successfully delete the external resource before the
+## finalizer is removed. If the provider can't reach the backend
+## (e.g., LocalStack is down or wrong endpoint), the K8s object
+## gets stuck in "Terminating" state forever.
+##
+## This scenario creates a bucket tied to a dead endpoint,
+## then demonstrates how to force-delete it by removing the
+## finalizer.
+##
+## Diagnosis:
+##   kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket
+##   → STATUS shows "Terminating" but the object never disappears
+##   kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket -o yaml | grep finalizers
+##
+## Fix (force remove finalizer):
+##   kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
+##     --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
+## ──────────────────────────────────────────────────────────
+apiVersion: s3.aws.upbound.io/v1beta2
+kind: Bucket
+metadata:
+  name: finalizer-test-bucket
+  labels:
+    demo: troubleshoot
+spec:
+  forProvider:
+    region: us-east-1
+  providerConfigRef:
+    name: wrong-endpoint
