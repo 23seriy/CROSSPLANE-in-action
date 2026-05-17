@@ -261,13 +261,19 @@ wait_for_user
 # HAPPY PATH — Scenario 9: Compositions + XRDs
 # ═══════════════════════════════════════════════════════════
 header "Scenario 9: Platform Abstraction with XRD + Composition"
+info "Installing function-patch-and-transform (required for pipeline-mode Compositions)..."
+kubectl apply -f "$PROJECT_DIR/crossplane/function-patch-and-transform.yaml"
+echo ""
+info "Waiting for function to become healthy (may take 1-2 minutes)..."
+kubectl wait --for=condition=healthy function.pkg/function-patch-and-transform --timeout=300s 2>/dev/null || true
+echo ""
 info "Applying XRD (CompositeResourceDefinition)..."
 kubectl apply -f "$PROJECT_DIR/crossplane/xrd-objectstorage.yaml"
 echo ""
 info "Applying Composition..."
 kubectl apply -f "$PROJECT_DIR/crossplane/composition-objectstorage.yaml"
 echo ""
-info "Creating a claim using the platform API..."
+info "Creating a composite resource using the platform API..."
 kubectl apply -f "$PROJECT_DIR/crossplane/claim-objectstorage.yaml"
 echo ""
 info "XRD status:"
@@ -276,11 +282,11 @@ echo ""
 info "Compositions:"
 kubectl get compositions 2>/dev/null || true
 echo ""
-info "Claims:"
-kubectl get objectstorages -n crossplane-demo 2>/dev/null || true
-echo ""
-info "Composite resources:"
+info "Composite resources (the platform API in action):"
 kubectl get xobjectstorages 2>/dev/null || true
+echo ""
+info "Managed resources created by the composition:"
+kubectl get managed 2>/dev/null || true
 wait_for_user
 
 # ═══════════════════════════════════════════════════════════

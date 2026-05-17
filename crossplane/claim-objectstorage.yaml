@@ -1,8 +1,7 @@
 apiVersion: demo.crossplane.io/v1alpha1
-kind: ObjectStorage
+kind: XObjectStorage
 metadata:
   name: team-highlights
-  namespace: crossplane-demo
 spec:
   parameters:
     region: us-east-1
