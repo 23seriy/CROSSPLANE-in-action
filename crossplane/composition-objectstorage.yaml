@@ -9,25 +9,33 @@ spec:
   compositeTypeRef:
     apiVersion: demo.crossplane.io/v1alpha1
     kind: XObjectStorage
-  resources:
-    - name: s3-bucket
-      base:
-        apiVersion: s3.aws.upbound.io/v1beta2
-        kind: Bucket
-        spec:
-          forProvider:
-            region: us-east-1
-            tags:
-              Project: crossplane-in-action
-              ManagedBy: crossplane-composition
-          providerConfigRef:
-            name: localstack
-      patches:
-        - fromFieldPath: spec.parameters.region
-          toFieldPath: spec.forProvider.region
-        - fromFieldPath: metadata.labels[crossplane.io/claim-name]
-          toFieldPath: metadata.annotations[crossplane.io/external-name]
-          transforms:
-            - type: string
-              string:
-                fmt: "xp-%s"
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: s3-bucket
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta2
+              kind: Bucket
+              spec:
+                forProvider:
+                  region: us-east-1
+                  tags:
+                    Project: crossplane-in-action
+                    ManagedBy: crossplane-composition
+                providerConfigRef:
+                  name: localstack
+            patches:
+              - fromFieldPath: spec.parameters.region
+                toFieldPath: spec.forProvider.region
+              - fromFieldPath: metadata.labels[crossplane.io/claim-name]
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      fmt: "xp-%s"

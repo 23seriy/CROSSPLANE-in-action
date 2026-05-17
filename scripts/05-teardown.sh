@@ -19,8 +19,8 @@ read -p "This will delete the Minikube cluster '$PROFILE'. Continue? (y/N) " -n 
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    info "Deleting Crossplane claims and managed resources..."
-    kubectl delete objectstorages --all -n crossplane-demo 2>/dev/null || true
+    info "Deleting composite resources and managed resources..."
+    kubectl delete xobjectstorages --all 2>/dev/null || true
     kubectl delete bucket.s3.aws.upbound.io --all 2>/dev/null || true
     kubectl delete bucketversioning.s3.aws.upbound.io --all 2>/dev/null || true
 
@@ -30,6 +30,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     info "Deleting demo namespace..."
     kubectl delete namespace crossplane-demo --ignore-not-found
+
+    info "Uninstalling Crossplane functions..."
+    kubectl delete functions --all 2>/dev/null || true
 
     info "Uninstalling Crossplane providers..."
     kubectl delete providers --all 2>/dev/null || true

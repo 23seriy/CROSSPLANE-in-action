@@ -38,6 +38,7 @@ kubectl exec deployment/localstack -n crossplane-demo -- \
 
 info "Deploying resource-api..."
 kubectl apply -f "$PROJECT_DIR/k8s/resource-api-sa.yaml"
+kubectl apply -f "$PROJECT_DIR/k8s/aws-credentials.yaml"
 kubectl apply -f "$PROJECT_DIR/k8s/resource-api-config.yaml"
 kubectl apply -f "$PROJECT_DIR/k8s/resource-api.yaml"
 kubectl apply -f "$PROJECT_DIR/k8s/resource-api-service.yaml"
