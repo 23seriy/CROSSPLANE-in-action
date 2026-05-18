@@ -367,7 +367,7 @@ Wait 15 seconds — the bucket should transition to `SYNCED=True` / `READY=True`
 **Clean up:**
 
 ```bash
-kubectl delete providerconfig bad-creds
+kubectl delete providerconfigs.aws.upbound.io bad-creds
 kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket
 ```
 
@@ -404,7 +404,7 @@ kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
 
 ```bash
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket
-kubectl delete providerconfig wrong-endpoint
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint
 kubectl delete secret wrong-endpoint-creds -n crossplane-system
 ```
 

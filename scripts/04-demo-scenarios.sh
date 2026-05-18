@@ -137,7 +137,7 @@ info "Bucket status after fix:"
 kubectl get bucket.s3.aws.upbound.io broken-creds-bucket 2>/dev/null || true
 echo ""
 info "Cleaning up broken ProviderConfig..."
-kubectl delete providerconfig bad-creds 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io bad-creds 2>/dev/null || true
 kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket 2>/dev/null || true
 wait_for_user
 
@@ -191,7 +191,7 @@ kubectl get bucket.s3.aws.upbound.io broken-endpoint-bucket 2>/dev/null || true
 echo ""
 info "Cleaning up..."
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket 2>/dev/null || true
-kubectl delete providerconfig wrong-endpoint 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint 2>/dev/null || true
 kubectl delete secret wrong-endpoint-creds -n crossplane-system 2>/dev/null || true
 wait_for_user
 
@@ -363,7 +363,7 @@ info "Cleaning up remaining broken resources..."
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket --wait=false 2>/dev/null || true
 kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
     --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-kubectl delete providerconfig wrong-endpoint 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint 2>/dev/null || true
 kubectl delete secret wrong-endpoint-creds -n crossplane-system 2>/dev/null || true
 wait_for_user
 

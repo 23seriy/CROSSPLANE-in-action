@@ -168,7 +168,7 @@ A ProviderConfig references a Secret that doesn't exist. The bucket gets stuck a
 ```bash
 kubectl patch bucket.s3.aws.upbound.io broken-creds-bucket \
   --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
-kubectl delete providerconfig bad-creds
+kubectl delete providerconfigs.aws.upbound.io bad-creds
 kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket
 ```
 
@@ -188,7 +188,7 @@ Credentials are correct but the endpoint URL is wrong (`localstack-typo:9999`). 
 kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
   --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket
-kubectl delete providerconfig wrong-endpoint
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint
 kubectl delete secret wrong-endpoint-creds -n crossplane-system
 ```
 
