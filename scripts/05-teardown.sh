@@ -1,5 +1,7 @@
 #!/bin/bash
-set -euo pipefail
+# Note: no 'set -e' — cleanup commands are best-effort because
+# minikube delete at the end will wipe everything regardless.
+set -uo pipefail
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -19,28 +21,37 @@ read -p "This will delete the Minikube cluster '$PROFILE'. Continue? (y/N) " -n 
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    info "Deleting composite resources and managed resources..."
-    kubectl delete xobjectstorages --all 2>/dev/null || true
-    kubectl delete bucket.s3.aws.upbound.io --all 2>/dev/null || true
-    kubectl delete bucketversioning.s3.aws.upbound.io --all 2>/dev/null || true
 
-    info "Deleting Compositions and XRDs..."
-    kubectl delete compositions --all 2>/dev/null || true
-    kubectl delete xrd --all 2>/dev/null || true
+    # Best-effort cleanup — if the API server is unreachable, skip
+    # straight to minikube delete which nukes everything anyway.
+    if kubectl cluster-info &>/dev/null; then
+        info "Deleting composite resources and managed resources..."
+        kubectl delete xobjectstorages --all --timeout=30s 2>/dev/null || true
+        kubectl delete bucket.s3.aws.upbound.io --all --wait=false 2>/dev/null || true
+        kubectl delete bucketversioning.s3.aws.upbound.io --all --wait=false 2>/dev/null || true
 
-    info "Deleting demo namespace..."
-    kubectl delete namespace crossplane-demo --ignore-not-found
+        info "Deleting Compositions and XRDs..."
+        kubectl delete compositions --all --timeout=30s 2>/dev/null || true
+        kubectl delete xrd --all --timeout=30s 2>/dev/null || true
 
-    info "Uninstalling Crossplane functions..."
-    kubectl delete functions --all 2>/dev/null || true
+        info "Deleting demo namespace..."
+        kubectl delete namespace crossplane-demo --ignore-not-found --wait=false 2>/dev/null || true
 
-    info "Uninstalling Crossplane providers..."
-    kubectl delete providers --all 2>/dev/null || true
+        info "Uninstalling Crossplane functions..."
+        kubectl delete functions --all --timeout=30s 2>/dev/null || true
 
-    info "Uninstalling Crossplane..."
-    helm uninstall crossplane -n crossplane-system 2>/dev/null || true
-    kubectl delete namespace crossplane-system --ignore-not-found
+        info "Uninstalling Crossplane providers..."
+        kubectl delete providers --all --wait=false 2>/dev/null || true
 
+        info "Uninstalling Crossplane..."
+        helm uninstall crossplane -n crossplane-system --timeout=60s 2>/dev/null || true
+        kubectl delete namespace crossplane-system --ignore-not-found --wait=false 2>/dev/null || true
+    else
+        warn "Cluster API server is unreachable — skipping resource cleanup."
+        warn "minikube delete will remove everything."
+    fi
+
+    echo ""
     info "Deleting Minikube cluster..."
     minikube delete -p "$PROFILE"
 
