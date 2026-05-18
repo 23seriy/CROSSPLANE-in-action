@@ -161,7 +161,16 @@ kubectl apply -f crossplane/broken-bad-credentials.yaml
 kubectl describe bucket.s3.aws.upbound.io broken-creds-bucket
 ```
 
-A ProviderConfig references a Secret that doesn't exist. The bucket gets stuck at `SYNCED=False` / `READY=False`. Learn to read the `Status.Conditions` and Events to find "cannot get credentials." Fix by patching `providerConfigRef` to the correct config.
+A ProviderConfig references a Secret that doesn't exist. The bucket gets stuck at `SYNCED=False` / `READY=False`. Learn to read the `Status.Conditions` and Events to find "cannot get credentials."
+
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io broken-creds-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete providerconfig bad-creds
+kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket
+```
 
 ### 🔥 6. BREAK IT — Wrong Endpoint
 
@@ -173,6 +182,16 @@ kubectl logs -n crossplane-system -l pkg.crossplane.io/revision --tail=10
 
 Credentials are correct but the endpoint URL is wrong (`localstack-typo:9999`). The provider can't connect. Learn to read provider pod logs for "no such host" and "connection refused" errors.
 
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket
+kubectl delete providerconfig wrong-endpoint
+kubectl delete secret wrong-endpoint-creds -n crossplane-system
+```
+
 ### 🔥 7. BREAK IT — Missing ProviderConfig Reference
 
 ```bash
@@ -182,6 +201,14 @@ kubectl get providerconfig
 ```
 
 The #1 most common Crossplane mistake: a bucket references ProviderConfig `production` that was never created. Learn to compare what exists vs. what's referenced, and patch the reference to fix it.
+
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io orphan-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete bucket.s3.aws.upbound.io orphan-bucket
+```
 
 ### 8. Bucket with Versioning
 
