@@ -246,10 +246,22 @@ This is Crossplane's killer feature: continuous reconciliation. If someone delet
 ### 🔥 11. BREAK IT — Stuck Finalizer on Delete
 
 ```bash
-# Try to delete a bucket tied to a dead endpoint
-kubectl delete bucket.s3.aws.upbound.io finalizer-test-bucket --wait=false
+# Step 1: Create a bucket on the working config (so it gets a finalizer)
+kubectl apply -f crossplane/broken-stuck-finalizer.yaml
+kubectl wait --for=condition=ready bucket.s3.aws.upbound.io/finalizer-test-bucket --timeout=60s
 
-# It's stuck in Terminating — check why
+# Step 2: Switch it to a dead endpoint
+kubectl apply -f crossplane/broken-wrong-endpoint.yaml
+kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"wrong-endpoint"}}}'
+
+# Step 3: Try to delete — it will hang
+kubectl delete bucket.s3.aws.upbound.io finalizer-test-bucket --wait=false
+sleep 15
+kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket
+# Shows "Terminating" but never disappears
+
+# Check the finalizers blocking deletion
 kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket -o yaml | grep -A5 finalizers
 
 # Nuclear option: force-remove the finalizer
@@ -257,7 +269,7 @@ kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
   --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
 ```
 
-When a provider can't reach the backend, it can't confirm external deletion, so the finalizer blocks `kubectl delete` forever. The object sits in `Terminating` indefinitely. This blocks namespace cleanup, provider uninstalls, and cluster teardown. Learn when and how to safely force-remove finalizers.
+The bucket must be created on a working config first so the provider adds a finalizer. Then switching to a dead endpoint and deleting simulates the real-world scenario: the provider can't confirm the external resource was deleted, so the finalizer blocks `kubectl delete` forever. Learn when and how to safely force-remove finalizers.
 
 ## 🔧 Troubleshooting Cheat Sheet
 
