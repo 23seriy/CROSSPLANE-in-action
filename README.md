@@ -135,7 +135,7 @@ kubectl apply -f crossplane/provider-aws.yaml
 kubectl get providers
 ```
 
-Installs `provider-aws-s3` from Upbound's marketplace. Takes 1-2 minutes to become healthy.
+Installs `provider-aws-s3` from Upbound's marketplace. Takes 4-5 minutes to become healthy.
 
 ### 3. Configure ProviderConfig for LocalStack
 
@@ -222,12 +222,14 @@ Shows how Crossplane manages multiple related resources (Bucket + BucketVersioni
 ### 9. Platform Abstraction — XRD + Composition
 
 ```bash
+kubectl apply -f crossplane/function-patch-and-transform.yaml
+kubectl wait --for=condition=healthy function.pkg/function-patch-and-transform --timeout=300s
 kubectl apply -f crossplane/xrd-objectstorage.yaml
 kubectl apply -f crossplane/composition-objectstorage.yaml
 kubectl apply -f crossplane/claim-objectstorage.yaml
 ```
 
-Creates a custom `ObjectStorage` API. Dev teams request storage with simple parameters (region, versioning) — the Composition handles the S3 details.
+Creates a custom `XObjectStorage` API using pipeline-mode Compositions. Dev teams request storage with simple parameters (region, versioning) — the Composition handles the S3 details.
 
 ### 10. Drift Detection — Self-Healing Infrastructure
 
@@ -283,7 +285,8 @@ crossplane-in-action/
 │   ├── resource-api.yaml     # API deployment
 │   ├── resource-api-service.yaml
 │   ├── resource-api-config.yaml
-│   └── resource-api-sa.yaml
+│   ├── resource-api-sa.yaml
+│   └── aws-credentials.yaml    # LocalStack dummy credentials
 ├── crossplane/               # Crossplane CRDs and configurations
 │   ├── provider-aws.yaml                  # AWS S3 provider installation
 │   ├── provider-config-localstack.yaml    # ProviderConfig → LocalStack
@@ -292,8 +295,9 @@ crossplane-in-action/
 │   ├── bucket-with-versioning.yaml        # Bucket + versioning
 │   ├── bucket-real-aws.yaml               # Bucket on real AWS
 │   ├── xrd-objectstorage.yaml             # CompositeResourceDefinition
-│   ├── composition-objectstorage.yaml     # Composition (XRD implementation)
-│   ├── claim-objectstorage.yaml           # Namespace-scoped claim
+│   ├── composition-objectstorage.yaml     # Composition (pipeline mode)
+│   ├── claim-objectstorage.yaml           # XObjectStorage composite resource
+│   ├── function-patch-and-transform.yaml  # Crossplane function for compositions
 │   ├── broken-bad-credentials.yaml        # 🔥 Missing Secret → stuck bucket
 │   ├── broken-wrong-endpoint.yaml         # 🔥 Dead endpoint → connection refused
 │   ├── broken-missing-providerconfig.yaml # 🔥 Typo in providerConfigRef
