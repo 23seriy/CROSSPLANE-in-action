@@ -25,7 +25,9 @@ spec:
     url:
       type: Static
       static: http://localstack.crossplane-demo.svc.cluster.local:4566
-    hostnameImmutable: true
+    services:
+      - s3
+  s3_use_path_style: true
   skip_metadata_api_check: true
   skip_credentials_validation: true
   skip_requesting_account_id: true

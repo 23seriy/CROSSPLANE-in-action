@@ -5,7 +5,7 @@ A hands-on project for learning **Crossplane** — the Kubernetes-native way to 
 The demo uses a Go microservice that reads and writes objects to an S3 bucket provisioned entirely by Crossplane. During development, **LocalStack** simulates AWS locally so you can experiment without any cloud bill. When you're ready, swap one line in the ProviderConfig to target real AWS.
 
 ![Crossplane](https://img.shields.io/badge/Crossplane-1.16-7B61FF?logo=crossplane&logoColor=white)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-1.35+-326CE5?logo=kubernetes&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.32-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Minikube-local-F7B93E?logo=kubernetes&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)
 
@@ -78,7 +78,7 @@ This installs or verifies `minikube`, `kubectl`, `helm`, and `docker`.
 ./scripts/02-start-cluster.sh
 ```
 
-Creates a Minikube profile called `crossplane-demo` on **Kubernetes `v1.35.1`**, installs Crossplane with Helm, and waits for the operator and RBAC manager to be ready.
+Creates a Minikube profile called `crossplane-demo` on **Kubernetes `v1.32.0`**, installs Crossplane with Helm, and waits for the operator and RBAC manager to be ready.
 
 ### Step 3: Build & Deploy the Demo
 
@@ -135,7 +135,7 @@ kubectl apply -f crossplane/provider-aws.yaml
 kubectl get providers
 ```
 
-Installs `provider-aws-s3` from Upbound's marketplace. Takes 1-2 minutes to become healthy.
+Installs `provider-aws-s3` from Upbound's marketplace. Takes 4-5 minutes to become healthy.
 
 ### 3. Configure ProviderConfig for LocalStack
 
@@ -161,7 +161,16 @@ kubectl apply -f crossplane/broken-bad-credentials.yaml
 kubectl describe bucket.s3.aws.upbound.io broken-creds-bucket
 ```
 
-A ProviderConfig references a Secret that doesn't exist. The bucket gets stuck at `SYNCED=False` / `READY=False`. Learn to read the `Status.Conditions` and Events to find "cannot get credentials." Fix by patching `providerConfigRef` to the correct config.
+A ProviderConfig references a Secret that doesn't exist. The bucket gets stuck at `SYNCED=False` / `READY=False`. Learn to read the `Status.Conditions` and Events to find "cannot get credentials."
+
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io broken-creds-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete providerconfigs.aws.upbound.io bad-creds
+kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket
+```
 
 ### 🔥 6. BREAK IT — Wrong Endpoint
 
@@ -173,6 +182,16 @@ kubectl logs -n crossplane-system -l pkg.crossplane.io/revision --tail=10
 
 Credentials are correct but the endpoint URL is wrong (`localstack-typo:9999`). The provider can't connect. Learn to read provider pod logs for "no such host" and "connection refused" errors.
 
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint
+kubectl delete secret wrong-endpoint-creds -n crossplane-system
+```
+
 ### 🔥 7. BREAK IT — Missing ProviderConfig Reference
 
 ```bash
@@ -182,6 +201,14 @@ kubectl get providerconfig
 ```
 
 The #1 most common Crossplane mistake: a bucket references ProviderConfig `production` that was never created. Learn to compare what exists vs. what's referenced, and patch the reference to fix it.
+
+**Fix and cleanup:**
+
+```bash
+kubectl patch bucket.s3.aws.upbound.io orphan-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"localstack"}}}'
+kubectl delete bucket.s3.aws.upbound.io orphan-bucket
+```
 
 ### 8. Bucket with Versioning
 
@@ -195,12 +222,14 @@ Shows how Crossplane manages multiple related resources (Bucket + BucketVersioni
 ### 9. Platform Abstraction — XRD + Composition
 
 ```bash
+kubectl apply -f crossplane/function-patch-and-transform.yaml
+kubectl wait --for=condition=healthy function.pkg/function-patch-and-transform --timeout=300s
 kubectl apply -f crossplane/xrd-objectstorage.yaml
 kubectl apply -f crossplane/composition-objectstorage.yaml
 kubectl apply -f crossplane/claim-objectstorage.yaml
 ```
 
-Creates a custom `ObjectStorage` API. Dev teams request storage with simple parameters (region, versioning) — the Composition handles the S3 details.
+Creates a custom `XObjectStorage` API using pipeline-mode Compositions. Dev teams request storage with simple parameters (region, versioning) — the Composition handles the S3 details.
 
 ### 10. Drift Detection — Self-Healing Infrastructure
 
@@ -217,10 +246,22 @@ This is Crossplane's killer feature: continuous reconciliation. If someone delet
 ### 🔥 11. BREAK IT — Stuck Finalizer on Delete
 
 ```bash
-# Try to delete a bucket tied to a dead endpoint
-kubectl delete bucket.s3.aws.upbound.io finalizer-test-bucket --wait=false
+# Step 1: Create a bucket on the working config (so it gets a finalizer)
+kubectl apply -f crossplane/broken-stuck-finalizer.yaml
+kubectl wait --for=condition=ready bucket.s3.aws.upbound.io/finalizer-test-bucket --timeout=60s
 
-# It's stuck in Terminating — check why
+# Step 2: Switch it to a dead endpoint
+kubectl apply -f crossplane/broken-wrong-endpoint.yaml
+kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
+  --type merge -p '{"spec":{"providerConfigRef":{"name":"wrong-endpoint"}}}'
+
+# Step 3: Try to delete — it will hang
+kubectl delete bucket.s3.aws.upbound.io finalizer-test-bucket --wait=false
+sleep 15
+kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket
+# Shows "Terminating" but never disappears
+
+# Check the finalizers blocking deletion
 kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket -o yaml | grep -A5 finalizers
 
 # Nuclear option: force-remove the finalizer
@@ -228,7 +269,7 @@ kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
   --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
 ```
 
-When a provider can't reach the backend, it can't confirm external deletion, so the finalizer blocks `kubectl delete` forever. The object sits in `Terminating` indefinitely. This blocks namespace cleanup, provider uninstalls, and cluster teardown. Learn when and how to safely force-remove finalizers.
+The bucket must be created on a working config first so the provider adds a finalizer. Then switching to a dead endpoint and deleting simulates the real-world scenario: the provider can't confirm the external resource was deleted, so the finalizer blocks `kubectl delete` forever. Learn when and how to safely force-remove finalizers.
 
 ## 🔧 Troubleshooting Cheat Sheet
 
@@ -256,7 +297,8 @@ crossplane-in-action/
 │   ├── resource-api.yaml     # API deployment
 │   ├── resource-api-service.yaml
 │   ├── resource-api-config.yaml
-│   └── resource-api-sa.yaml
+│   ├── resource-api-sa.yaml
+│   └── aws-credentials.yaml    # LocalStack dummy credentials
 ├── crossplane/               # Crossplane CRDs and configurations
 │   ├── provider-aws.yaml                  # AWS S3 provider installation
 │   ├── provider-config-localstack.yaml    # ProviderConfig → LocalStack
@@ -265,8 +307,9 @@ crossplane-in-action/
 │   ├── bucket-with-versioning.yaml        # Bucket + versioning
 │   ├── bucket-real-aws.yaml               # Bucket on real AWS
 │   ├── xrd-objectstorage.yaml             # CompositeResourceDefinition
-│   ├── composition-objectstorage.yaml     # Composition (XRD implementation)
-│   ├── claim-objectstorage.yaml           # Namespace-scoped claim
+│   ├── composition-objectstorage.yaml     # Composition (pipeline mode)
+│   ├── claim-objectstorage.yaml           # XObjectStorage composite resource
+│   ├── function-patch-and-transform.yaml  # Crossplane function for compositions
 │   ├── broken-bad-credentials.yaml        # 🔥 Missing Secret → stuck bucket
 │   ├── broken-wrong-endpoint.yaml         # 🔥 Dead endpoint → connection refused
 │   ├── broken-missing-providerconfig.yaml # 🔥 Typo in providerConfigRef

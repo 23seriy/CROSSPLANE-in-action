@@ -20,7 +20,7 @@ print_crossplane_diagnostics() {
 }
 
 PROFILE="crossplane-demo"
-TARGET_K8S_VERSION="v1.35.1"
+TARGET_K8S_VERSION="v1.32.0"
 
 echo "============================================"
 echo "  Crossplane in Action — Cluster Setup"

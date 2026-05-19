@@ -7,9 +7,9 @@
 ## (e.g., LocalStack is down or wrong endpoint), the K8s object
 ## gets stuck in "Terminating" state forever.
 ##
-## This scenario creates a bucket tied to a dead endpoint,
-## then demonstrates how to force-delete it by removing the
-## finalizer.
+## This bucket starts on the working 'localstack' config so it
+## gets a finalizer. The demo script then patches it to the dead
+## 'wrong-endpoint' config and attempts deletion.
 ##
 ## Diagnosis:
 ##   kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket
@@ -30,4 +30,4 @@ spec:
   forProvider:
     region: us-east-1
   providerConfigRef:
-    name: wrong-endpoint
+    name: localstack

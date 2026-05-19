@@ -137,7 +137,7 @@ info "Bucket status after fix:"
 kubectl get bucket.s3.aws.upbound.io broken-creds-bucket 2>/dev/null || true
 echo ""
 info "Cleaning up broken ProviderConfig..."
-kubectl delete providerconfig bad-creds 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io bad-creds 2>/dev/null || true
 kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket 2>/dev/null || true
 wait_for_user
 
@@ -191,7 +191,7 @@ kubectl get bucket.s3.aws.upbound.io broken-endpoint-bucket 2>/dev/null || true
 echo ""
 info "Cleaning up..."
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket 2>/dev/null || true
-kubectl delete providerconfig wrong-endpoint 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint 2>/dev/null || true
 kubectl delete secret wrong-endpoint-creds -n crossplane-system 2>/dev/null || true
 wait_for_user
 
@@ -311,22 +311,30 @@ err "but the provider can't reach the backend to confirm deletion."
 err "The K8s object gets stuck in 'Terminating' forever because the"
 err "finalizer can't be released."
 echo ""
-info "Setting up: creating broken ProviderConfig + Bucket tied to dead endpoint..."
-kubectl apply -f "$PROJECT_DIR/crossplane/broken-wrong-endpoint.yaml"
+info "Step 1: Create a bucket on the WORKING config (so it gets a finalizer)..."
+kubectl apply -f "$PROJECT_DIR/crossplane/broken-stuck-finalizer.yaml"
 echo ""
-info "Waiting 10 seconds for the resource to exist..."
+info "Waiting for the bucket to become READY (needs finalizer to be added)..."
+kubectl wait --for=condition=ready bucket.s3.aws.upbound.io/finalizer-test-bucket --timeout=60s 2>/dev/null || true
+echo ""
+info "Confirm finalizer exists:"
+kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket -o jsonpath='{.metadata.finalizers}' 2>/dev/null || true
+echo ""
+echo ""
+info "Step 2: Create the dead endpoint and switch the bucket to it..."
+kubectl apply -f "$PROJECT_DIR/crossplane/broken-wrong-endpoint.yaml"
+sleep 5
+kubectl patch bucket.s3.aws.upbound.io finalizer-test-bucket \
+    --type merge -p '{"spec":{"providerConfigRef":{"name":"wrong-endpoint"}}}' 2>/dev/null || true
+echo ""
+info "Waiting 10 seconds for the provider to fail connecting..."
 sleep 10
 echo ""
-info "Now applying the finalizer-test bucket on the broken endpoint..."
-kubectl apply -f "$PROJECT_DIR/crossplane/broken-stuck-finalizer.yaml"
-sleep 5
-echo ""
-
-err "Attempting to delete the bucket (this will hang because provider can't reach backend)..."
+err "Step 3: Try to delete — this will hang because the provider can't reach the backend..."
 kubectl delete bucket.s3.aws.upbound.io finalizer-test-bucket --wait=false 2>/dev/null || true
 echo ""
-info "Waiting 10 seconds..."
-sleep 10
+info "Waiting 15 seconds..."
+sleep 15
 echo ""
 err "Let's check — the resource should be stuck in 'Terminating':"
 kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket 2>/dev/null || true
@@ -363,7 +371,7 @@ info "Cleaning up remaining broken resources..."
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket --wait=false 2>/dev/null || true
 kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
     --type json -p '[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-kubectl delete providerconfig wrong-endpoint 2>/dev/null || true
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint 2>/dev/null || true
 kubectl delete secret wrong-endpoint-creds -n crossplane-system 2>/dev/null || true
 wait_for_user
 

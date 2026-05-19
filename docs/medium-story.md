@@ -213,8 +213,12 @@ spec:
     url:
       type: Static
       static: http://localstack.crossplane-demo.svc.cluster.local:4566
-    hostnameImmutable: true
+    services:
+      - s3
+  s3_use_path_style: true
 ```
+
+> **Note:** `s3_use_path_style: true` is critical for LocalStack. Without it, the provider uses virtual-hosted-style addressing (`bucket-name.localstack:4566`) which LocalStack can't resolve inside the cluster.
 
 Verify:
 
@@ -363,7 +367,7 @@ Wait 15 seconds — the bucket should transition to `SYNCED=True` / `READY=True`
 **Clean up:**
 
 ```bash
-kubectl delete providerconfig bad-creds
+kubectl delete providerconfigs.aws.upbound.io bad-creds
 kubectl delete bucket.s3.aws.upbound.io broken-creds-bucket
 ```
 
@@ -400,7 +404,7 @@ kubectl patch bucket.s3.aws.upbound.io broken-endpoint-bucket \
 
 ```bash
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket
-kubectl delete providerconfig wrong-endpoint
+kubectl delete providerconfigs.aws.upbound.io wrong-endpoint
 kubectl delete secret wrong-endpoint-creds -n crossplane-system
 ```
 
@@ -505,7 +509,7 @@ kubectl apply -f crossplane/xrd-objectstorage.yaml
 ```
 
 ```yaml
-apiVersion: apiextensions.crossplane.io/v1
+apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: xobjectstorages.demo.crossplane.io
@@ -514,9 +518,6 @@ spec:
   names:
     kind: XObjectStorage
     plural: xobjectstorages
-  claimNames:
-    kind: ObjectStorage
-    plural: objectstorages
   versions:
     - name: v1alpha1
       served: true
@@ -539,6 +540,8 @@ spec:
                       default: false
 ```
 
+> **Note:** Crossplane v2 uses `apiextensions.crossplane.io/v2` and removed namespace-scoped claims. Composite resources are cluster-scoped.
+
 ### Create the Composition
 
 This defines *how* the API is implemented — mapping the simple parameters to real AWS resources:
@@ -546,6 +549,15 @@ This defines *how* the API is implemented — mapping the simple parameters to r
 ```bash
 kubectl apply -f crossplane/composition-objectstorage.yaml
 ```
+
+Crossplane v2 requires pipeline-mode Compositions with `function-patch-and-transform`. First, install the function:
+
+```bash
+kubectl apply -f crossplane/function-patch-and-transform.yaml
+kubectl wait --for=condition=healthy function.pkg/function-patch-and-transform --timeout=300s
+```
+
+Then apply the Composition:
 
 ```yaml
 apiVersion: apiextensions.crossplane.io/v1
@@ -556,24 +568,34 @@ spec:
   compositeTypeRef:
     apiVersion: demo.crossplane.io/v1alpha1
     kind: XObjectStorage
-  resources:
-    - name: s3-bucket
-      base:
-        apiVersion: s3.aws.upbound.io/v1beta2
-        kind: Bucket
-        spec:
-          forProvider:
-            region: us-east-1
-            tags:
-              ManagedBy: crossplane-composition
-          providerConfigRef:
-            name: localstack
-      patches:
-        - fromFieldPath: spec.parameters.region
-          toFieldPath: spec.forProvider.region
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: s3-bucket
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta2
+              kind: Bucket
+              spec:
+                forProvider:
+                  region: us-east-1
+                  tags:
+                    ManagedBy: crossplane-composition
+                providerConfigRef:
+                  name: localstack
+            patches:
+              - fromFieldPath: spec.parameters.region
+                toFieldPath: spec.forProvider.region
 ```
 
-### Create a Claim
+> **Note:** Crossplane v2 replaced inline `spec.resources` with `spec.pipeline`. The `function-patch-and-transform` function provides the same patching capabilities.
+
+### Create a Composite Resource
 
 Now a developer can request storage without knowing anything about S3:
 
@@ -583,10 +605,9 @@ kubectl apply -f crossplane/claim-objectstorage.yaml
 
 ```yaml
 apiVersion: demo.crossplane.io/v1alpha1
-kind: ObjectStorage
+kind: XObjectStorage
 metadata:
   name: team-highlights
-  namespace: crossplane-demo
 spec:
   parameters:
     region: us-east-1
@@ -596,17 +617,14 @@ spec:
 Verify the chain:
 
 ```bash
-# The claim
-kubectl get objectstorages -n crossplane-demo
-
-# The composite resource (cluster-scoped)
+# The composite resource
 kubectl get xobjectstorages
 
 # The actual S3 bucket (managed by the composition)
 kubectl get bucket.s3.aws.upbound.io
 ```
 
-The developer sees `ObjectStorage`. The platform team controls the implementation. The cloud team manages the ProviderConfig. Clean separation of concerns.
+The developer creates an `XObjectStorage`. The platform team controls the Composition. The cloud team manages the ProviderConfig. Clean separation of concerns.
 
 ---
 
