@@ -29,8 +29,8 @@ kubectl apply -f "$PROJECT_DIR/k8s/namespace.yaml"
 info "Deploying LocalStack (local AWS simulator)..."
 kubectl apply -f "$PROJECT_DIR/k8s/localstack.yaml"
 
-info "Waiting for LocalStack to be ready..."
-kubectl wait --for=condition=available deployment/localstack -n crossplane-demo --timeout=180s
+info "Waiting for LocalStack to be ready (first run pulls ~1.1 GB image, may take a few minutes)..."
+kubectl wait --for=condition=available deployment/localstack -n crossplane-demo --timeout=360s
 
 info "Creating S3 bucket in LocalStack..."
 kubectl exec deployment/localstack -n crossplane-demo -- \
