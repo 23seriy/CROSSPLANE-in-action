@@ -38,4 +38,5 @@ spec:
                 transforms:
                   - type: string
                     string:
+                      type: Format
                       fmt: "xp-%s"

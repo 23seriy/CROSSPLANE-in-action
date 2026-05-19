@@ -1,4 +1,4 @@
-apiVersion: apiextensions.crossplane.io/v2
+apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
   name: xobjectstorages.demo.crossplane.io
@@ -7,6 +7,9 @@ spec:
   names:
     kind: XObjectStorage
     plural: xobjectstorages
+  claimNames:
+    kind: ObjectStorage
+    plural: objectstorages
   versions:
     - name: v1alpha1
       served: true
