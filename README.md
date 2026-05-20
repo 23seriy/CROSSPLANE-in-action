@@ -9,6 +9,8 @@ The demo uses a Go microservice that reads and writes objects to an S3 bucket pr
 ![Minikube](https://img.shields.io/badge/Minikube-local-F7B93E?logo=kubernetes&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)
 
+> 📝 **Published article:** [Crossplane in Action: Provisioning AWS Resources from Kubernetes on Your Laptop](https://medium.com/@sergeiolshanetski/crossplane-in-action-provisioning-aws-resources-from-kubernetes-on-your-laptop-692d3aa35c6a)
+
 ## 🏗️ Architecture
 
 ```text
@@ -320,8 +322,6 @@ crossplane-in-action/
 │   ├── 03-deploy-app.sh
 │   ├── 04-demo-scenarios.sh
 │   └── 05-teardown.sh
-├── docs/
-│   └── medium-story.md       # Article outline
 └── .gitignore
 ```
 
