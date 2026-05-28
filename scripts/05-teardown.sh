@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Note: no 'set -e' — cleanup commands are best-effort because
 # minikube delete at the end will wipe everything regardless.
 set -uo pipefail
