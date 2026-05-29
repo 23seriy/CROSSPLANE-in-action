@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -euo pipefail
 
 RED='\033[0;31m'
