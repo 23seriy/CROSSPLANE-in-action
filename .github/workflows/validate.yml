@@ -1,0 +1,179 @@
+name: Validate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: Shell Script Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck on all scripts
+        run: |
+          shellcheck -x scripts/*.sh
+        continue-on-error: false
+
+  yaml-lint:
+    name: YAML Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint Kubernetes manifests
+        run: |
+          find k8s -name '*.yaml' -print0 | xargs -0 yamllint -d relaxed
+          yamllint -d relaxed crossplane/*.yaml
+        continue-on-error: false
+
+  crossplane-yaml-validation:
+    name: Crossplane Resource Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate Crossplane YAML structure
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import glob
+          import sys
+
+          errors = 0
+          valid_kinds = {
+              'Provider', 'ProviderConfig', 'Bucket', 'BucketVersioning',
+              'CompositeResourceDefinition', 'Composition', 'Function',
+              'ObjectStorage', 'XObjectStorage',
+          }
+
+          for manifest in sorted(glob.glob('crossplane/*.yaml')):
+              print(f"Validating {manifest}")
+              try:
+                  with open(manifest) as f:
+                      docs = list(yaml.safe_load_all(f))
+                  if not docs:
+                      print(f"  ERROR: {manifest} is empty")
+                      errors += 1
+                      continue
+                  kinds = [doc.get('kind') for doc in docs if doc]
+                  print(f"  OK — kinds: {kinds}")
+              except Exception as e:
+                  print(f"  ERROR: {e}")
+                  errors += 1
+
+          if errors:
+              print(f"\n✗ {errors} file(s) failed validation")
+              sys.exit(1)
+          print("\n✓ All Crossplane manifests have valid YAML syntax")
+          EOF
+        continue-on-error: false
+
+  go-build:
+    name: Go Build & Vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build resource-api
+        run: |
+          cd apps/resource-api
+          go mod download
+          go vet ./...
+          CGO_ENABLED=0 go build -o /dev/null .
+        continue-on-error: false
+
+  docker-lint:
+    name: Dockerfile Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install hadolint
+        run: |
+          wget -q -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          chmod +x /tmp/hadolint
+          sudo mv /tmp/hadolint /usr/local/bin/hadolint
+
+      - name: Lint Dockerfiles
+        run: |
+          echo "Checking Dockerfile syntax and best practices..."
+          hadolint apps/resource-api/Dockerfile || true
+          echo "✓ Dockerfile check complete"
+        continue-on-error: true
+
+  docs-check:
+    name: Documentation Completeness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required docs exist
+        run: |
+          files=(
+            "README.md"
+            "LICENSE"
+            ".gitignore"
+            "CONTRIBUTING.md"
+            "CODE_OF_CONDUCT.md"
+            "SECURITY.md"
+            "TROUBLESHOOTING.md"
+            "TESTING.md"
+            "CHANGELOG.md"
+            "CLAUDE.md"
+          )
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Missing: $file"
+              exit 1
+            fi
+          done
+          echo "All required documentation files present"
+
+  script-syntax:
+    name: Script Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check bash syntax
+        run: |
+          for script in scripts/*.sh; do
+            echo "Checking $script"
+            bash -n "$script"
+          done
+
+  markdown-lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nosborn/github-action-markdown-cli@v3.5.0
+        with:
+          files: .
+          config_file: .markdownlint.json
+        continue-on-error: true

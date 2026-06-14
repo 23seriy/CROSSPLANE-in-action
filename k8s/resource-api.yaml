@@ -16,6 +16,11 @@ spec:
         app: resource-api
     spec:
       serviceAccountName: resource-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: resource-api
           image: crossplane-demo/resource-api:latest
@@ -51,6 +56,25 @@ spec:
                   name: aws-credentials
                   key: AWS_SECRET_ACCESS_KEY
                   optional: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            failureThreshold: 10
+            periodSeconds: 3
           readinessProbe:
             httpGet:
               path: /health

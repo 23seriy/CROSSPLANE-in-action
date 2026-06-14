@@ -365,7 +365,11 @@ info "Waiting 5 seconds..."
 sleep 5
 echo ""
 info "Bucket should now be gone:"
-kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket 2>/dev/null && err "Still exists!" || info "Successfully deleted!"
+if kubectl get bucket.s3.aws.upbound.io finalizer-test-bucket 2>/dev/null; then
+    err "Still exists!"
+else
+    info "Successfully deleted!"
+fi
 echo ""
 info "Cleaning up remaining broken resources..."
 kubectl delete bucket.s3.aws.upbound.io broken-endpoint-bucket --wait=false 2>/dev/null || true

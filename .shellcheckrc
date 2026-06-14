@@ -1,0 +1,3 @@
+# Shellcheck configuration for crossplane-in-action scripts
+# SC1091: Sourced file not found in path (files are relative to repo)
+disable=SC1091
