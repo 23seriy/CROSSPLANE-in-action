@@ -6,9 +6,9 @@ Hands-on demo of **Crossplane** — Kubernetes-native cloud infrastructure provi
 
 ## Tech Stack
 
-- **App**: Go 1.22 (resource-api)
+- **App**: Go 1.24 (resource-api)
 - **Platform**: Minikube (profile: `crossplane-demo`, Kubernetes v1.32.0)
-- **Tool**: Crossplane v1.16 + Upbound AWS S3 Provider v1.7.0
+- **Tool**: Crossplane v2.3 + Upbound AWS S3 Provider v1.7.0
 - **Cloud Sim**: LocalStack (local AWS emulation)
 - **Container**: Docker (multi-stage Go build inside Minikube, non-root user)
 - **CI/CD**: GitHub Actions (shellcheck, yamllint, go vet, hadolint, markdown lint)

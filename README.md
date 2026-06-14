@@ -4,10 +4,10 @@ A hands-on project for learning **Crossplane** — the Kubernetes-native way to 
 
 The demo uses a Go microservice that reads and writes objects to an S3 bucket provisioned entirely by Crossplane. During development, **LocalStack** simulates AWS locally so you can experiment without any cloud bill. When you're ready, swap one line in the ProviderConfig to target real AWS.
 
-![Crossplane](https://img.shields.io/badge/Crossplane-1.16-7B61FF?logo=crossplane&logoColor=white)
+![Crossplane](https://img.shields.io/badge/Crossplane-2.3-7B61FF?logo=crossplane&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.32-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Minikube-local-F7B93E?logo=kubernetes&logoColor=white)
-![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)
 ![CI](https://github.com/23seriy/crossplane-in-action/actions/workflows/validate.yml/badge.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 

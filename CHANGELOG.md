@@ -121,12 +121,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Tested With
 
 - **Kubernetes** — v1.32.0
-- **Crossplane** — v1.16
+- **Crossplane** — v2.3.2
 - **Provider AWS S3** — v1.7.0
 - **Minikube** — latest
 - **macOS** — 13.0+
 - **Docker Desktop** — latest
-- **Go** — 1.22
+- **Go** — 1.24
 
 ---
 
