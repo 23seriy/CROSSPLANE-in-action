@@ -367,7 +367,7 @@ kubectl cluster-info dump --output-directory=./cluster-dump
 # Crossplane status
 kubectl get all -n crossplane-system
 kubectl get providers
-kubectl get managed
+kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io
 kubectl get events --sort-by=.metadata.creationTimestamp | tail -30
 ```
 
@@ -388,7 +388,7 @@ If you can't solve it, open an issue on GitHub with:
 | Crossplane logs | `kubectl logs -n crossplane-system deploy/crossplane --tail=50` |
 | Provider logs | `kubectl logs -n crossplane-system -l pkg.crossplane.io/revision --tail=50` |
 | All providers | `kubectl get providers` |
-| All managed resources | `kubectl get managed` |
+| All managed resources | `kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io` |
 | All ProviderConfigs | `kubectl get providerconfig` |
 | Describe a resource | `kubectl describe bucket.s3.aws.upbound.io <name>` |
 | Check events | `kubectl get events --sort-by=.metadata.creationTimestamp` |

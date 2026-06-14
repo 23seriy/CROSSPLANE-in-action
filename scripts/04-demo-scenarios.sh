@@ -37,7 +37,7 @@ echo "Make sure port-forward is running:"
 echo "  kubectl port-forward svc/resource-api 9090:8080 -n crossplane-demo"
 echo ""
 echo "And in another terminal, watch Crossplane resources:"
-echo "  kubectl get managed -w"
+echo "  kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io -w"
 wait_for_user
 
 # ═══════════════════════════════════════════════════════════
@@ -95,7 +95,7 @@ info "Watching the bucket get provisioned..."
 echo "  kubectl get bucket.s3.aws.upbound.io -w"
 echo ""
 info "Current managed resources:"
-kubectl get managed 2>/dev/null || true
+kubectl get bucket.s3.aws.upbound.io 2>/dev/null || true
 wait_for_user
 
 # ═══════════════════════════════════════════════════════════
@@ -114,7 +114,7 @@ echo ""
 err "Let's see the damage:"
 echo ""
 info "All managed resources — notice 'broken-creds-bucket' is stuck:"
-kubectl get managed 2>/dev/null || true
+kubectl get bucket.s3.aws.upbound.io 2>/dev/null || true
 echo ""
 info "Describe the broken bucket to find the root cause:"
 kubectl describe bucket.s3.aws.upbound.io broken-creds-bucket 2>/dev/null | tail -20 || true
@@ -254,7 +254,7 @@ info "Applying bucket + versioning configuration..."
 kubectl apply -f "$PROJECT_DIR/crossplane/bucket-with-versioning.yaml"
 echo ""
 info "Managed resources after adding versioning:"
-kubectl get managed 2>/dev/null || true
+kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io 2>/dev/null || true
 wait_for_user
 
 # ═══════════════════════════════════════════════════════════
@@ -286,7 +286,7 @@ info "Composite resources (the platform API in action):"
 kubectl get xobjectstorages 2>/dev/null || true
 echo ""
 info "Managed resources created by the composition:"
-kubectl get managed 2>/dev/null || true
+kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io 2>/dev/null || true
 wait_for_user
 
 # ═══════════════════════════════════════════════════════════
@@ -399,7 +399,7 @@ echo "  🔥 11. TROUBLESHOOT: Stuck finalizer on delete"
 echo ""
 echo "Key debugging commands to remember:"
 echo "  kubectl describe <resource>                         — check Status.Conditions"
-echo "  kubectl get managed                                 — overview of all resources"
+echo "  kubectl get bucket.s3.aws.upbound.io                  — overview of all resources"
 echo "  kubectl logs -n crossplane-system -l pkg.crossplane.io/revision"
 echo "  kubectl get events --sort-by=.metadata.creationTimestamp"
 echo "  kubectl get <resource> -o yaml | grep -A5 finalizers"

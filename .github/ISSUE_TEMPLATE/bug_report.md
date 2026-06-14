@@ -53,7 +53,7 @@ Paste logs here
 
 ```bash
 kubectl get providers
-kubectl get managed
+kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io
 kubectl logs -n crossplane-system -l app=crossplane --tail=50
 kubectl get pods -n crossplane-system
 minikube logs -p crossplane-demo --tail=50

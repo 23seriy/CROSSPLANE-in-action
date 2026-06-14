@@ -218,7 +218,7 @@ kubectl delete bucket.s3.aws.upbound.io orphan-bucket
 
 ```bash
 kubectl apply -f crossplane/bucket-with-versioning.yaml
-kubectl get managed
+kubectl get bucket.s3.aws.upbound.io,bucketversioning.s3.aws.upbound.io
 ```
 
 Shows how Crossplane manages multiple related resources (Bucket + BucketVersioning) declaratively.
