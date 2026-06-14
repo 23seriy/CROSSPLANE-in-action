@@ -53,19 +53,10 @@ jobs:
         run: pip install pyyaml
 
       - name: Validate Crossplane YAML structure
+        shell: python
         run: |
-          python3 << 'EOF'
-          import yaml
-          import glob
-          import sys
-
+          import yaml, glob, sys
           errors = 0
-          valid_kinds = {
-              'Provider', 'ProviderConfig', 'Bucket', 'BucketVersioning',
-              'CompositeResourceDefinition', 'Composition', 'Function',
-              'ObjectStorage', 'XObjectStorage',
-          }
-
           for manifest in sorted(glob.glob('crossplane/*.yaml')):
               print(f"Validating {manifest}")
               try:
@@ -80,12 +71,10 @@ jobs:
               except Exception as e:
                   print(f"  ERROR: {e}")
                   errors += 1
-
           if errors:
               print(f"\n✗ {errors} file(s) failed validation")
               sys.exit(1)
           print("\n✓ All Crossplane manifests have valid YAML syntax")
-          EOF
         continue-on-error: false
 
   go-build:
@@ -96,7 +85,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.24'
 
       - name: Build resource-api
         run: |
