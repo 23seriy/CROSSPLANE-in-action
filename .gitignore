@@ -1,7 +1,34 @@
-.DS_Store
-*.pyc
-__pycache__/
-.env
-*.log
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+cluster-dump/
+
+# Environment
+.env
+.env.local
+
+# Misc
+*.log
+*.tmp

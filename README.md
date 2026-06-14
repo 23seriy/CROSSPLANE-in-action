@@ -8,6 +8,8 @@ The demo uses a Go microservice that reads and writes objects to an S3 bucket pr
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.32-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Minikube-local-F7B93E?logo=kubernetes&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)
+![CI](https://github.com/23seriy/crossplane-in-action/actions/workflows/validate.yml/badge.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 > 📝 **Published article:** [Crossplane in Action: Provisioning AWS Resources from Kubernetes on Your Laptop](https://medium.com/@sergeiolshanetski/crossplane-in-action-provisioning-aws-resources-from-kubernetes-on-your-laptop-692d3aa35c6a)
 
@@ -288,19 +290,25 @@ The bucket must be created on a working config first so the provider adds a fina
 
 ```text
 crossplane-in-action/
+├── .github/                  # GitHub community and CI/CD
+│   ├── workflows/validate.yml         # CI pipeline
+│   ├── ISSUE_TEMPLATE/                # Bug report and feature request templates
+│   ├── PULL_REQUEST_TEMPLATE.md       # PR checklist
+│   ├── GOVERNANCE.md                  # Project governance
+│   └── dependabot.yml                 # Automated dependency updates
 ├── apps/
 │   └── resource-api/         # Go microservice — reads/writes S3 objects
 │       ├── main.go
 │       ├── go.mod
-│       └── Dockerfile
-├── k8s/                      # Kubernetes manifests
+│       └── Dockerfile        # Multi-stage build, non-root user (UID 10001)
+├── k8s/                      # Kubernetes manifests (with security contexts)
 │   ├── namespace.yaml
 │   ├── localstack.yaml       # Local AWS simulator
-│   ├── resource-api.yaml     # API deployment
+│   ├── resource-api.yaml     # API deployment (resource limits, security context)
 │   ├── resource-api-service.yaml
 │   ├── resource-api-config.yaml
 │   ├── resource-api-sa.yaml
-│   └── aws-credentials.yaml    # LocalStack dummy credentials
+│   └── aws-credentials.yaml  # LocalStack dummy credentials
 ├── crossplane/               # Crossplane CRDs and configurations
 │   ├── provider-aws.yaml                  # AWS S3 provider installation
 │   ├── provider-config-localstack.yaml    # ProviderConfig → LocalStack
@@ -322,7 +330,13 @@ crossplane-in-action/
 │   ├── 03-deploy-app.sh
 │   ├── 04-demo-scenarios.sh
 │   └── 05-teardown.sh
-└── .gitignore
+├── CONTRIBUTING.md            # How to contribute
+├── TESTING.md                 # Testing procedures
+├── TROUBLESHOOTING.md         # Debug guide
+├── SECURITY.md                # Security policy
+├── CODE_OF_CONDUCT.md         # Community standards
+├── CHANGELOG.md               # Release history
+└── CLAUDE.md                  # Developer guide
 ```
 
 ## 🧹 Teardown
@@ -346,6 +360,18 @@ Deletes all Crossplane resources, uninstalls providers and Crossplane, and remov
 5. **Composable and extensible** — Start with S3, add RDS, IAM roles, or any AWS service. The same pattern applies to GCP and Azure providers.
 
 6. **Troubleshooting is a skill** — Bad credentials, wrong endpoints, missing configs, and stuck finalizers are the real-world issues you'll hit. This project teaches you to diagnose them with `kubectl describe`, provider logs, and managed resource conditions before they become production incidents.
+
+## 📖 Additional Documentation
+
+| Document | Description |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute, code standards, PR process |
+| [TESTING.md](TESTING.md) | Manual and automated testing procedures |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Debug guide for common Crossplane issues |
+| [SECURITY.md](SECURITY.md) | Security policy and responsible disclosure |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+| [CLAUDE.md](CLAUDE.md) | Developer guide and architecture |
 
 ## 📚 Resources
 
