@@ -18,7 +18,7 @@ echo "============================================"
 echo ""
 
 info "Configuring Docker to use Minikube's daemon..."
-eval $(minikube -p "$PROFILE" docker-env)
+eval "$(minikube -p "$PROFILE" docker-env)"
 
 info "Building resource-api image..."
 docker build -t crossplane-demo/resource-api:latest "$PROJECT_DIR/apps/resource-api"
