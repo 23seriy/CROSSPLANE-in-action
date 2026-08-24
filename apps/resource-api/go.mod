@@ -3,7 +3,7 @@ module github.com/23seriy/crossplane-in-action/apps/resource-api
 go 1.24
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.43.6
+	github.com/aws/aws-sdk-go-v2 v1.43.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.37
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.107.2
 )
